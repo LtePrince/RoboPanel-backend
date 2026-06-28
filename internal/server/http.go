@@ -85,6 +85,7 @@ func (s *HttpServer) buildRouter(hub *wsHub) *gin.Engine {
 		}
 
 		v1.GET("/demos", handleQuery(s.record.List))
+		v1.DELETE("/demos/:name", handleURI(s.record.Delete))
 		v1.GET("/demos/:name/files/:file", s.downloadFile)
 	}
 

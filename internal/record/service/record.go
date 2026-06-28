@@ -136,3 +136,22 @@ func (s *RecordService) List(_ context.Context, _ *ListReq) (*ListResp, error) {
 func (s *RecordService) FileExists(demoName, fileName string) (string, bool) {
 	return s.repo.FileExists(demoName, fileName)
 }
+
+// --- Delete ---
+
+type DeleteReq struct {
+	Name string `uri:"name" binding:"required"`
+}
+
+type DeleteResp struct {
+	Message string `json:"message"`
+}
+
+func (s *RecordService) Delete(_ context.Context, req *DeleteReq) (*DeleteResp, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.repo.DeleteDemo(req.Name); err != nil {
+		return nil, err
+	}
+	return &DeleteResp{Message: fmt.Sprintf("deleted %s", req.Name)}, nil
+}

@@ -46,3 +46,19 @@ func handleJSON[Req, Resp any](fn ServiceFunc[Req, Resp]) gin.HandlerFunc {
 		c.JSON(http.StatusOK, Response{Code: "OK", Message: "success", Data: resp})
 	}
 }
+
+func handleURI[Req, Resp any](fn ServiceFunc[Req, Resp]) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req Req
+		if err := c.ShouldBindUri(&req); err != nil {
+			c.JSON(http.StatusBadRequest, Response{Code: "BAD_REQUEST", Message: err.Error()})
+			return
+		}
+		resp, err := fn(c.Request.Context(), &req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, Response{Code: "INTERNAL_ERROR", Message: err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, Response{Code: "OK", Message: "success", Data: resp})
+	}
+}

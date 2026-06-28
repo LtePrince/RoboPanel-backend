@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -45,6 +46,14 @@ func (r *recordRepository) FileExists(demoName, fileName string) (string, bool) 
 		return "", false
 	}
 	return path, true
+}
+
+func (r *recordRepository) DeleteDemo(demoName string) error {
+	path := filepath.Join(r.demoDir, filepath.Base(demoName))
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return fmt.Errorf("demo not found: %s", demoName)
+	}
+	return os.RemoveAll(path)
 }
 
 func (r *recordRepository) listFiles(demoName string) []schema.DemoFile {
