@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+ros:
+  master_uri: "localhost:11311"
+  node_name: "robot_panel"
+  topics:
+    joint_state: "/j2n6s300_driver/out/joint_state"
+    tool_pose: "/j2n6s300_driver/out/tool_pose"
+    odometry: "/xqserial_server/Odom"
+    galileo_status: "/galileo_serial_server/galileo_status"
+
+record:
+  demo_dir: "/home/xiaoqiang/Desktop/Open-Teach/data"
+  script_path: "/home/xiaoqiang/Desktop/Open-Teach/data_collect.py"
+  script_workdir: "/home/xiaoqiang/Desktop/Open-Teach"
