@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 
+	"RoboPanel-backend/internal/camera"
 	"RoboPanel-backend/internal/config"
 	recordsvc "RoboPanel-backend/internal/record/service"
 	robotsvc "RoboPanel-backend/internal/robot/service"
@@ -26,12 +27,14 @@ func NewHttpServer(
 	robot *robotsvc.RobotService,
 	record *recordsvc.RecordService,
 	rosClient *ros.Client,
+	camCfg camera.Config,
 	lc fx.Lifecycle,
 ) *HttpServer {
 	s := &HttpServer{cfg: cfg, robot: robot, record: record, ros: rosClient}
 
-	hub := newHub()
-	router := s.buildRouter(hub)
+	stateHub := newHub()
+	camHub := newCameraHub(camCfg)
+	router := s.buildRouter(stateHub, camHub)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
@@ -40,7 +43,8 @@ func NewHttpServer(
 
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
-			go broadcastLoop(rosClient, hub)
+			go broadcastLoop(rosClient, stateHub)
+			go camHub.captureLoop()
 			go func() {
 				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					fmt.Printf("[server] error: %v\n", err)
@@ -57,7 +61,7 @@ func NewHttpServer(
 	return s
 }
 
-func (s *HttpServer) buildRouter(hub *wsHub) *gin.Engine {
+func (s *HttpServer) buildRouter(hub *wsHub, camHub *cameraHub) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -76,6 +80,7 @@ func (s *HttpServer) buildRouter(hub *wsHub) *gin.Engine {
 	{
 		v1.GET("/robot/state", handleQuery(s.robot.GetState))
 		v1.GET("/ws/state", wsStateHandler(hub))
+		v1.GET("/ws/camera", cameraWsHandler(camHub))
 
 		rec := v1.Group("/record")
 		{

@@ -49,10 +49,9 @@ func (s *RecordService) Start(_ context.Context, req *StartReq) (*StartResp, err
 		return nil, fmt.Errorf("create demo dir: %w", err)
 	}
 
-	cmd := exec.Command("python3", s.cfg.Record.ScriptPath,
+	cmd := exec.Command("bash", s.cfg.Record.ScriptPath,
 		fmt.Sprintf("demo_num=%d", req.DemoNum),
 	)
-	cmd.Dir = s.cfg.Record.ScriptWorkdir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

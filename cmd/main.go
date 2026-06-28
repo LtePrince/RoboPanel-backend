@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 
+	"RoboPanel-backend/internal/camera"
 	"RoboPanel-backend/internal/config"
 	"RoboPanel-backend/internal/record"
 	"RoboPanel-backend/internal/robot"
@@ -32,6 +33,7 @@ func main() {
 				ros.Module,
 				robot.Module,
 				record.Module,
+				camera.Module,
 				server.Module,
 				fx.Invoke(func(*server.HttpServer) {}),
 			)

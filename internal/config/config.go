@@ -21,10 +21,17 @@ type Config struct {
 		} `mapstructure:"topics"`
 	} `mapstructure:"ros"`
 	Record struct {
-		DemoDir       string `mapstructure:"demo_dir"`
-		ScriptPath    string `mapstructure:"script_path"`
-		ScriptWorkdir string `mapstructure:"script_workdir"`
+		DemoDir    string `mapstructure:"demo_dir"`
+		ScriptPath string `mapstructure:"script_path"`
 	} `mapstructure:"record"`
+	Camera struct {
+		Serial      string `mapstructure:"serial"`
+		Width       int    `mapstructure:"width"`
+		Height      int    `mapstructure:"height"`
+		FPS         int    `mapstructure:"fps"`
+		JpegQuality int    `mapstructure:"jpeg_quality"`
+		TimeoutMs   int    `mapstructure:"timeout_ms"`
+	} `mapstructure:"camera"`
 }
 
 func load(file string) (*Config, error) {

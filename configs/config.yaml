@@ -13,5 +13,12 @@ ros:
 
 record:
   demo_dir: "/home/xiaoqiang/Desktop/Open-Teach/data"
-  script_path: "/home/xiaoqiang/Desktop/Open-Teach/data_collect.py"
-  script_workdir: "/home/xiaoqiang/Desktop/Open-Teach"
+  script_path: "/home/xiaoqiang/wzy/RoboPanel-backend/scripts/record.sh"
+
+camera:
+  serial: "919122072662"
+  width: 640
+  height: 480
+  fps: 30
+  jpeg_quality: 70
+  timeout_ms: 1000
