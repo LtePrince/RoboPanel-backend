@@ -3,9 +3,9 @@ package record
 import (
 	"go.uber.org/fx"
 
-	"robot-panel/internal/config"
-	"robot-panel/internal/record/repository"
-	"robot-panel/internal/record/service"
+	"RoboPanel-backend/internal/config"
+	"RoboPanel-backend/internal/record/repository"
+	"RoboPanel-backend/internal/record/service"
 )
 
 var Module = fx.Module("record",

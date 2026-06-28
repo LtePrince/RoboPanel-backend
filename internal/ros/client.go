@@ -15,8 +15,8 @@ import (
 	stdm "github.com/bluenviron/goroslib/v2/pkg/msgs/std_msgs"
 	"go.uber.org/fx"
 
-	"robot-panel/internal/config"
-	"robot-panel/internal/robot/schema"
+	"RoboPanel-backend/internal/config"
+	"RoboPanel-backend/internal/robot/schema"
 )
 
 // GalileoStatus matches galileo_serial_server/GalileoStatus.msg field order exactly.

@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"robot-panel/internal/robot/schema"
-	"robot-panel/internal/ros"
+	"RoboPanel-backend/internal/robot/schema"
+	"RoboPanel-backend/internal/ros"
 )
 
 type RobotService struct {

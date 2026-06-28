@@ -1,6 +1,6 @@
 package repository
 
-import "robot-panel/internal/record/schema"
+import "RoboPanel-backend/internal/record/schema"
 
 type IRecordRepository interface {
 	ListDemos() ([]schema.Demo, error)

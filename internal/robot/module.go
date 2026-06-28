@@ -3,7 +3,7 @@ package robot
 import (
 	"go.uber.org/fx"
 
-	"robot-panel/internal/robot/service"
+	"RoboPanel-backend/internal/robot/service"
 )
 
 var Module = fx.Module("robot",

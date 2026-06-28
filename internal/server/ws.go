@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
-	"robot-panel/internal/ros"
+	"RoboPanel-backend/internal/ros"
 )
 
 var upgrader = websocket.Upgrader{

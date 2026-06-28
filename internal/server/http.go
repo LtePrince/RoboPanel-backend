@@ -8,10 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 
-	"robot-panel/internal/config"
-	recordsvc "robot-panel/internal/record/service"
-	robotsvc "robot-panel/internal/robot/service"
-	"robot-panel/internal/ros"
+	"RoboPanel-backend/internal/config"
+	recordsvc "RoboPanel-backend/internal/record/service"
+	robotsvc "RoboPanel-backend/internal/robot/service"
+	"RoboPanel-backend/internal/ros"
 )
 
 type HttpServer struct {

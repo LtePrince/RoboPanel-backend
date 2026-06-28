@@ -7,11 +7,11 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 
-	"robot-panel/internal/config"
-	"robot-panel/internal/record"
-	"robot-panel/internal/robot"
-	"robot-panel/internal/ros"
-	"robot-panel/internal/server"
+	"RoboPanel-backend/internal/config"
+	"RoboPanel-backend/internal/record"
+	"RoboPanel-backend/internal/robot"
+	"RoboPanel-backend/internal/ros"
+	"RoboPanel-backend/internal/server"
 )
 
 var (

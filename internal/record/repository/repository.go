@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"robot-panel/internal/record/schema"
+	"RoboPanel-backend/internal/record/schema"
 )
 
 type recordRepository struct {

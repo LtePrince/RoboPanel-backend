@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"sync"
 
-	"robot-panel/internal/config"
-	"robot-panel/internal/record/repository"
-	"robot-panel/internal/record/schema"
+	"RoboPanel-backend/internal/config"
+	"RoboPanel-backend/internal/record/repository"
+	"RoboPanel-backend/internal/record/schema"
 )
 
 type RecordService struct {
