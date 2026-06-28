@@ -24,7 +24,7 @@ func (r *recordRepository) ListDemos() ([]schema.Demo, error) {
 		return nil, err
 	}
 
-	var demos []schema.Demo
+	demos := []schema.Demo{}
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
@@ -48,11 +48,11 @@ func (r *recordRepository) FileExists(demoName, fileName string) (string, bool) 
 }
 
 func (r *recordRepository) listFiles(demoName string) []schema.DemoFile {
+	files := []schema.DemoFile{}
 	entries, err := os.ReadDir(filepath.Join(r.demoDir, demoName))
 	if err != nil {
-		return nil
+		return files
 	}
-	var files []schema.DemoFile
 	for _, e := range entries {
 		if e.IsDir() {
 			continue

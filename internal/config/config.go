@@ -10,9 +10,10 @@ type Config struct {
 		Port int `mapstructure:"port"`
 	} `mapstructure:"server"`
 	ROS struct {
-		MasterURI string `mapstructure:"master_uri"`
-		NodeName  string `mapstructure:"node_name"`
-		Topics    struct {
+		MasterURI      string `mapstructure:"master_uri"`
+		NodeName       string `mapstructure:"node_name"`
+		StaleTimeoutMs int    `mapstructure:"stale_timeout_ms"`
+		Topics         struct {
 			JointState    string `mapstructure:"joint_state"`
 			ToolPose      string `mapstructure:"tool_pose"`
 			Odometry      string `mapstructure:"odometry"`

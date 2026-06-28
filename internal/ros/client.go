@@ -45,14 +45,23 @@ type GalileoStatus struct {
 	BusyStatus        int32
 }
 
+const defaultStaleTimeout = 1000 * time.Millisecond
+
 type Client struct {
-	mu    sync.RWMutex
-	state schema.RobotState
-	node  *goroslib.Node
+	mu               sync.RWMutex
+	state            schema.RobotState
+	node             *goroslib.Node
+	lastJointStateAt time.Time
+	lastOdomAt       time.Time
+	staleTimeout     time.Duration
 }
 
 func NewClient(cfg *config.Config, lc fx.Lifecycle) *Client {
-	c := &Client{}
+	timeout := defaultStaleTimeout
+	if ms := cfg.ROS.StaleTimeoutMs; ms > 0 {
+		timeout = time.Duration(ms) * time.Millisecond
+	}
+	c := &Client{staleTimeout: timeout}
 	lc.Append(fx.Hook{
 		OnStart: func(_ context.Context) error {
 			if err := c.connect(cfg); err != nil {
@@ -83,7 +92,7 @@ func (c *Client) connect(cfg *config.Config) error {
 
 	subscribe(node, t.JointState, func(m *sm.JointState) {
 		c.mu.Lock()
-		c.state.ArmConnected = true
+		c.lastJointStateAt = time.Now()
 		c.state.JointState = schema.JointState{
 			Position: m.Position,
 			Velocity: m.Velocity,
@@ -110,7 +119,7 @@ func (c *Client) connect(cfg *config.Config) error {
 			1-2*(q.Y*q.Y+q.Z*q.Z),
 		)
 		c.mu.Lock()
-		c.state.BaseConnected = true
+		c.lastOdomAt = time.Now()
 		c.state.BaseState = schema.BaseState{
 			PosX:     m.Pose.Pose.Position.X,
 			PosY:     m.Pose.Pose.Position.Y,
@@ -141,8 +150,14 @@ func (c *Client) connect(cfg *config.Config) error {
 func (c *Client) GetState() schema.RobotState {
 	c.mu.RLock()
 	s := c.state
+	lastJoint := c.lastJointStateAt
+	lastOdom := c.lastOdomAt
 	c.mu.RUnlock()
-	s.Timestamp = time.Now().UnixMilli()
+
+	now := time.Now()
+	s.Timestamp = now.UnixMilli()
+	s.ArmConnected = !lastJoint.IsZero() && now.Sub(lastJoint) < c.staleTimeout
+	s.BaseConnected = !lastOdom.IsZero() && now.Sub(lastOdom) < c.staleTimeout
 	return s
 }
 

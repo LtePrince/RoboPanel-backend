@@ -4,6 +4,7 @@ server:
 ros:
   master_uri: "localhost:11311"
   node_name: "robot_panel"
+  stale_timeout_ms: 1000
   topics:
     joint_state: "/j2n6s300_driver/out/joint_state"
     tool_pose: "/j2n6s300_driver/out/tool_pose"
