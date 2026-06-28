@@ -3,21 +3,21 @@ package service
 import (
 	"context"
 
-	"robot-panel/internal/robot/repository"
 	"robot-panel/internal/robot/schema"
+	"robot-panel/internal/ros"
 )
 
 type RobotService struct {
-	repo repository.IRobotRepository
+	ros *ros.Client
 }
 
-func NewRobotService(repo repository.IRobotRepository) *RobotService {
-	return &RobotService{repo: repo}
+func NewRobotService(ros *ros.Client) *RobotService {
+	return &RobotService{ros: ros}
 }
 
 type GetStateReq struct{}
 
 func (s *RobotService) GetState(_ context.Context, _ *GetStateReq) (*schema.RobotState, error) {
-	state := s.repo.GetState()
+	state := s.ros.GetState()
 	return &state, nil
 }
