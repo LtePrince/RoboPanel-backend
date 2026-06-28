@@ -5,22 +5,23 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sync"
 
 	"robot-panel/internal/config"
+	"robot-panel/internal/record/repository"
 	"robot-panel/internal/record/schema"
 )
 
 type RecordService struct {
 	cfg     *config.Config
+	repo    repository.IRecordRepository
 	mu      sync.Mutex
 	cmd     *exec.Cmd
 	running bool
 }
 
-func NewRecordService(cfg *config.Config) *RecordService {
-	return &RecordService{cfg: cfg}
+func NewRecordService(cfg *config.Config, repo repository.IRecordRepository) *RecordService {
+	return &RecordService{cfg: cfg, repo: repo}
 }
 
 // --- Start ---
@@ -43,7 +44,7 @@ func (s *RecordService) Start(_ context.Context, req *StartReq) (*StartResp, err
 		return nil, fmt.Errorf("recording already in progress")
 	}
 
-	demoDir := filepath.Join(s.cfg.Record.DemoDir, fmt.Sprintf("demo_%d", req.DemoNum))
+	demoDir := fmt.Sprintf("%s/demo_%d", s.cfg.Record.DemoDir, req.DemoNum)
 	if err := os.MkdirAll(demoDir, 0755); err != nil {
 		return nil, fmt.Errorf("create demo dir: %w", err)
 	}
@@ -61,7 +62,6 @@ func (s *RecordService) Start(_ context.Context, req *StartReq) (*StartResp, err
 
 	s.cmd = cmd
 	s.running = true
-
 	go func() {
 		_ = cmd.Wait()
 		s.mu.Lock()
@@ -70,11 +70,7 @@ func (s *RecordService) Start(_ context.Context, req *StartReq) (*StartResp, err
 		s.mu.Unlock()
 	}()
 
-	return &StartResp{
-		DemoNum: req.DemoNum,
-		DemoDir: demoDir,
-		PID:     cmd.Process.Pid,
-	}, nil
+	return &StartResp{DemoNum: req.DemoNum, DemoDir: demoDir, PID: cmd.Process.Pid}, nil
 }
 
 // --- Stop ---
@@ -92,8 +88,6 @@ func (s *RecordService) Stop(_ context.Context, _ *StopReq) (*StopResp, error) {
 	if !s.running || s.cmd == nil {
 		return nil, fmt.Errorf("no recording in progress")
 	}
-
-	// SIGINT first so Python can flush/close HDF5 cleanly
 	if err := s.cmd.Process.Signal(os.Interrupt); err != nil {
 		_ = s.cmd.Process.Kill()
 	}
@@ -114,7 +108,6 @@ type StatusResp struct {
 func (s *RecordService) Status(_ context.Context, _ *StatusReq) (*StatusResp, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	resp := &StatusResp{Running: s.running}
 	if s.running && s.cmd != nil && s.cmd.Process != nil {
 		resp.PID = s.cmd.Process.Pid
@@ -122,7 +115,7 @@ func (s *RecordService) Status(_ context.Context, _ *StatusReq) (*StatusResp, er
 	return resp, nil
 }
 
-// --- List demos ---
+// --- List ---
 
 type ListReq struct{}
 
@@ -132,45 +125,14 @@ type ListResp struct {
 }
 
 func (s *RecordService) List(_ context.Context, _ *ListReq) (*ListResp, error) {
-	entries, err := os.ReadDir(s.cfg.Record.DemoDir)
-	if os.IsNotExist(err) {
-		return &ListResp{Demos: []schema.Demo{}, Total: 0}, nil
-	}
+	demos, err := s.repo.ListDemos()
 	if err != nil {
 		return nil, err
-	}
-
-	var demos []schema.Demo
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		info, _ := e.Info()
-		demo := schema.Demo{
-			Name:      e.Name(),
-			CreatedAt: info.ModTime().UnixMilli(),
-			Files:     listFiles(filepath.Join(s.cfg.Record.DemoDir, e.Name())),
-		}
-		demos = append(demos, demo)
-	}
-	if demos == nil {
-		demos = []schema.Demo{}
 	}
 	return &ListResp{Demos: demos, Total: len(demos)}, nil
 }
 
-func listFiles(dir string) []schema.DemoFile {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil
-	}
-	var files []schema.DemoFile
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		info, _ := e.Info()
-		files = append(files, schema.DemoFile{Name: e.Name(), Size: info.Size()})
-	}
-	return files
+// FileExists delegates path resolution to the repository.
+func (s *RecordService) FileExists(demoName, fileName string) (string, bool) {
+	return s.repo.FileExists(demoName, fileName)
 }

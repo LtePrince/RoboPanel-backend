@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -94,8 +92,8 @@ func (s *HttpServer) buildRouter(hub *wsHub) *gin.Engine {
 }
 
 func (s *HttpServer) downloadFile(c *gin.Context) {
-	path := filepath.Join(s.cfg.Record.DemoDir, c.Param("name"), c.Param("file"))
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	path, ok := s.record.FileExists(c.Param("name"), c.Param("file"))
+	if !ok {
 		c.JSON(http.StatusNotFound, Response{Code: "NOT_FOUND", Message: "file not found"})
 		return
 	}

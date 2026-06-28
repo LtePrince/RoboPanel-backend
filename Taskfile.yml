@@ -1,0 +1,51 @@
+version: '3'
+
+vars:
+  PROJECT_NAME: robot-panel
+  BIN_DIR: bin
+  BUILD_TIME:
+    sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
+  GIT_COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+  GO_VERSION:
+    sh: go version | awk '{print $3}'
+  LDFLAGS: -ldflags '-s -w -X main.BuildTime={{.BUILD_TIME}} -X main.GitCommit={{.GIT_COMMIT}} -X main.GoVersion={{.GO_VERSION}}'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  setup:
+    desc: Install dev tools and tidy dependencies
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  run:
+    desc: Run the server (dev config)
+    cmds:
+      - go run ./cmd/main.go serve -c configs/config.yaml
+
+  build:
+    desc: Build production binary
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - GOOS=linux GOARCH=amd64 go build -trimpath {{.LDFLAGS}} -o {{.BIN_DIR}}/{{.PROJECT_NAME}} ./cmd/main.go
+
+  lint:
+    desc: Format and vet
+    cmds:
+      - go fmt ./...
+      - go vet ./...
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v -race -timeout 5m ./...
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - go clean
+      - rm -rf {{.BIN_DIR}}
