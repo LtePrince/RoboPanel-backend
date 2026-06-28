@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
+	"syscall"
+	"time"
 
 	"RoboPanel-backend/internal/config"
 	"RoboPanel-backend/internal/record/repository"
@@ -17,6 +20,8 @@ type RecordService struct {
 	repo    repository.IRecordRepository
 	mu      sync.Mutex
 	cmd     *exec.Cmd
+	logFile *os.File
+	pid     int
 	running bool
 }
 
@@ -34,6 +39,7 @@ type StartResp struct {
 	DemoNum int    `json:"demo_num"`
 	DemoDir string `json:"demo_dir"`
 	PID     int    `json:"pid"`
+	LogFile string `json:"log_file"`
 }
 
 func (s *RecordService) Start(_ context.Context, req *StartReq) (*StartResp, error) {
@@ -44,32 +50,51 @@ func (s *RecordService) Start(_ context.Context, req *StartReq) (*StartResp, err
 		return nil, fmt.Errorf("recording already in progress")
 	}
 
-	demoDir := fmt.Sprintf("%s/demo_%d", s.cfg.Record.DemoDir, req.DemoNum)
+	demoDir := fmt.Sprintf("%s/demonstration_%d", s.cfg.Record.DemoDir, req.DemoNum)
 	if err := os.MkdirAll(demoDir, 0755); err != nil {
 		return nil, fmt.Errorf("create demo dir: %w", err)
+	}
+
+	logPath := filepath.Join(demoDir, "record.log")
+	logFile, err := os.Create(logPath)
+	if err != nil {
+		return nil, fmt.Errorf("create log file: %w", err)
 	}
 
 	cmd := exec.Command("bash", s.cfg.Record.ScriptPath,
 		fmt.Sprintf("demo_num=%d", req.DemoNum),
 	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = logFile
+	cmd.Stderr = logFile
+	// Own process group so we can signal the whole tree (all Python subprocesses)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	if err := cmd.Start(); err != nil {
+		logFile.Close()
 		return nil, fmt.Errorf("start recorder: %w", err)
 	}
 
 	s.cmd = cmd
+	s.logFile = logFile
+	s.pid = cmd.Process.Pid
 	s.running = true
+
 	go func() {
 		_ = cmd.Wait()
+		logFile.Close()
 		s.mu.Lock()
 		s.running = false
 		s.cmd = nil
+		s.logFile = nil
 		s.mu.Unlock()
 	}()
 
-	return &StartResp{DemoNum: req.DemoNum, DemoDir: demoDir, PID: cmd.Process.Pid}, nil
+	return &StartResp{
+		DemoNum: req.DemoNum,
+		DemoDir: demoDir,
+		PID:     cmd.Process.Pid,
+		LogFile: logPath,
+	}, nil
 }
 
 // --- Stop ---
@@ -82,17 +107,35 @@ type StopResp struct {
 
 func (s *RecordService) Stop(_ context.Context, _ *StopReq) (*StopResp, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if !s.running || s.cmd == nil {
+	if !s.running {
+		s.mu.Unlock()
 		return nil, fmt.Errorf("no recording in progress")
 	}
-	if err := s.cmd.Process.Signal(os.Interrupt); err != nil {
-		_ = s.cmd.Process.Kill()
+	pid := s.pid
+	s.mu.Unlock()
+
+	// SIGINT to the entire process group: all Python subprocesses (camera,
+	// robot state recorders) receive it and flush their files before exiting.
+	if err := syscall.Kill(-pid, syscall.SIGINT); err != nil {
+		s.mu.Lock()
+		if s.cmd != nil {
+			_ = s.cmd.Process.Signal(os.Interrupt)
+		}
+		s.mu.Unlock()
 	}
-	s.running = false
-	s.cmd = nil
-	return &StopResp{Message: "recording stopped"}, nil
+
+	// Force-kill after 15 s if the process group still hasn't exited.
+	go func() {
+		time.Sleep(15 * time.Second)
+		s.mu.Lock()
+		still := s.running
+		s.mu.Unlock()
+		if still {
+			_ = syscall.Kill(-pid, syscall.SIGKILL)
+		}
+	}()
+
+	return &StopResp{Message: "stopping - data is being saved"}, nil
 }
 
 // --- Status ---
@@ -108,8 +151,8 @@ func (s *RecordService) Status(_ context.Context, _ *StatusReq) (*StatusResp, er
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	resp := &StatusResp{Running: s.running}
-	if s.running && s.cmd != nil && s.cmd.Process != nil {
-		resp.PID = s.cmd.Process.Pid
+	if s.running {
+		resp.PID = s.pid
 	}
 	return resp, nil
 }

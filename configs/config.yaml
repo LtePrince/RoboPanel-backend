@@ -12,7 +12,7 @@ ros:
     galileo_status: "/galileo_serial_server/galileo_status"
 
 record:
-  demo_dir: "/home/xiaoqiang/Desktop/Open-Teach/data"
+  demo_dir: "/home/xiaoqiang/Desktop/Open-Teach/extracted_data"
   script_path: "/home/xiaoqiang/wzy/RoboPanel-backend/scripts/record.sh"
 
 camera:

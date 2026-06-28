@@ -6,4 +6,4 @@ conda activate openteach
 source /home/xiaoqiang/amper/catkin_ws_vr/devel/setup.bash
 
 cd /home/xiaoqiang/Desktop/Open-Teach
-exec python data_collect.py "$@"
+exec python data_collect.py robot=kinova "$@"
